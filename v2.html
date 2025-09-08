@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT Countdown - บางซื่อ ⇄ เชียงราก</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-top: 4px solid #dc2626;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #dc2626;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .route-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .route-btn {
+            background: white;
+            border: 2px solid #dc2626;
+            color: #dc2626;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .route-btn.active,
+        .route-btn:hover {
+            background: #dc2626;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(220,38,38,0.3);
+        }
+
+        .countdown-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #dc2626;
+        }
+
+        .train-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .train-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc2626;
+        }
+
+        .departure-time {
+            font-size: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .days-note {
+            color: #666;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .countdown {
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .countdown-time {
+            font-size: 36px;
+            font-weight: bold;
+            color: #dc2626;
+            margin-bottom: 10px;
+        }
+
+        .countdown-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626, #ef4444);
+            width: 0%;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .train-icon {
+            position: absolute;
+            right: -15px;
+            top: -12px;
+            font-size: 20px;
+            color: #dc2626;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .status.next {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .status.departed {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+        }
+
+        .no-trains {
+            text-align: center;
+            color: #666;
+            font-size: 16px;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        @keyframes trainMove {
+            0% { transform: translateX(-20px); }
+            100% { transform: translateX(20px); }
+        }
+
+        .train-icon.moving {
+            animation: trainMove 2s ease-in-out infinite alternate;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .route-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .train-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 5px;
+            }
+            
+            .countdown-time {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚄 SRT</div>
+            <div class="subtitle">รถไฟความเร็วสูง บางซื่อ ⇄ เชียงราก</div>
+        </div>
+
+        <div class="route-selector">
+            <button class="route-btn active" onclick="selectRoute('bangSue')">
+                บางซื่อ → เชียงราก
+            </button>
+            <button class="route-btn" onclick="selectRoute('chiangRak')">
+                เชียงราก → บางซื่อ
+            </button>
+        </div>
+
+        <div id="trainSchedule"></div>
+    </div>
+
+    <script>
+        const schedules = {
+            bangSue: [
+                { number: "341", time: "17:24", days: "ทุกวัน" },
+                { number: "317", time: "17:53", days: "(จันทร์-ศุกร์)" },
+                { number: "313", time: "18:43", days: "(จันทร์-ศุกร์)" }
+            ],
+            chiangRak: [
+                { number: "210", time: "19:16", days: "ทุกวัน" }
+            ]
+        };
+
+        const routes = {
+            bangSue: { from: "บางซื่อ", to: "เชียงราก" },
+            chiangRak: { from: "เชียงราก", to: "บางซื่อ" }
+        };
+
+        let currentRoute = 'bangSue';
+        let intervals = [];
+
+        function selectRoute(route) {
+            currentRoute = route;
+            
+            // Update button states
+            document.querySelectorAll('.route-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateSchedule();
+        }
+
+        function parseTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const now = new Date();
+            const time = new Date();
+            time.setHours(hours, minutes, 0, 0);
+            
+            // If time is in the past, set it for tomorrow
+            if (time <= now) {
+                time.setDate(time.getDate() + 1);
+            }
+            
+            return time;
+        }
+
+        function isTrainRunning(train) {
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+            
+            if (train.days === "(จันทร์-ศุกร์)") {
+                return dayOfWeek >= 1 && dayOfWeek <= 5; // Monday to Friday
+            }
+            return true; // ทุกวัน
+        }
+
+        function formatTime(milliseconds) {
+            if (milliseconds <= 0) return "00:00:00";
+            
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateCountdown(trainElement, departureTime) {
+            const now = new Date().getTime();
+            const timeUntilDeparture = departureTime - now;
+            
+            const countdownElement = trainElement.querySelector('.countdown-time');
+            const statusElement = trainElement.querySelector('.status');
+            const progressBar = trainElement.querySelector('.progress-fill');
+            const trainIcon = trainElement.querySelector('.train-icon');
+            
+            if (timeUntilDeparture > 0) {
+                countdownElement.textContent = formatTime(timeUntilDeparture);
+                
+                // Update progress (simulate journey progress)
+                const totalJourneyTime = 60 * 60 * 1000; // 1 hour in milliseconds
+                const journeyStartTime = departureTime;
+                const journeyEndTime = departureTime + totalJourneyTime;
+                const currentTime = now;
+                
+                if (currentTime >= journeyStartTime) {
+                    const journeyProgress = Math.min(100, ((currentTime - journeyStartTime) / totalJourneyTime) * 100);
+                    progressBar.style.width = journeyProgress + '%';
+                    trainIcon.classList.add('moving');
+                    statusElement.textContent = '🚄 รถไฟกำลังเดินทาง';
+                    statusElement.className = 'status next';
+                } else {
+                    progressBar.style.width = '0%';
+                    trainIcon.classList.remove('moving');
+                    statusElement.textContent = '🕐 รอขึ้นรถไฟ';
+                    statusElement.className = 'status next';
+                }
+            } else {
+                countdownElement.textContent = "ออกเดินทางแล้ว";
+                statusElement.textContent = '✅ รถไฟออกเดินทางแล้ว';
+                statusElement.className = 'status departed';
+                
+                // Show full progress for departed trains
+                progressBar.style.width = '100%';
+                trainIcon.classList.remove('moving');
+            }
+        }
+
+        function updateSchedule() {
+            // Clear existing intervals
+            intervals.forEach(interval => clearInterval(interval));
+            intervals = [];
+            
+            const scheduleContainer = document.getElementById('trainSchedule');
+            const currentSchedule = schedules[currentRoute];
+            const route = routes[currentRoute];
+            
+            // Filter and sort trains
+            const availableTrains = currentSchedule.filter(isTrainRunning);
+            
+            if (availableTrains.length === 0) {
+                scheduleContainer.innerHTML = `
+                    <div class="no-trains">
+                        <div>ไม่มีรถไฟในวันนี้</div>
+                        <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                            ${currentRoute === 'bangSue' ? 'ขบวน 317 และ 313 วิ่งเฉพาะวันจันทร์-ศุกร์' : ''}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by departure time, with next trains first
+            const now = new Date();
+            availableTrains.sort((a, b) => {
+                const timeA = parseTime(a.time);
+                const timeB = parseTime(b.time);
+                
+                // If both are today or both are tomorrow, sort by time
+                if ((timeA.getDate() === now.getDate()) === (timeB.getDate() === now.getDate())) {
+                    return timeA - timeB;
+                }
+                
+                // Prioritize today's trains
+                return timeA.getDate() === now.getDate() ? -1 : 1;
+            });
+            
+            scheduleContainer.innerHTML = availableTrains.map(train => {
+                const departureTime = parseTime(train.time);
+                
+                return `
+                    <div class="countdown-card">
+                        <div class="train-info">
+                            <div>
+                                <span class="train-number">ขบวน ${train.number}</span>
+                                ${train.days !== 'ทุกวัน' ? `<span class="days-note">${train.days}</span>` : ''}
+                            </div>
+                            <div class="departure-time">ออก ${train.time} น.</div>
+                        </div>
+                        
+                        <div class="status next">🕐 รอขึ้นรถไฟ</div>
+                        
+                        <div class="countdown">
+                            <div class="countdown-time">00:00:00</div>
+                            <div class="countdown-label">เวลาคงเหลือ</div>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill">
+                                    <span class="train-icon">🚄</span>
+                                </div>
+                            </div>
+                            <div class="progress-labels">
+                                <span>${route.from}</span>
+                                <span>${route.to}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Set up countdown intervals
+            const trainElements = scheduleContainer.querySelectorAll('.countdown-card');
+            trainElements.forEach((element, index) => {
+                const train = availableTrains[index];
+                const departureTime = parseTime(train.time).getTime();
+                
+                // Initial update
+                updateCountdown(element, departureTime);
+                
+                // Set up interval for this train
+                const interval = setInterval(() => {
+                    updateCountdown(element, departureTime);
+                }, 1000);
+                
+                intervals.push(interval);
+            });
+        }
+
+        // Initialize
+        updateSchedule();
+        
+        // Update every minute to handle day changes
+        setInterval(updateSchedule, 60000);
+    </script>
+</body>
+</html>
